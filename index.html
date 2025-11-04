@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>محاكاة معملية — توقيف الانقسام المؤقت</title>
+  <style>
+    :root{
+      --bg:#08101a; --panel:#0d1720; --muted:#9fb0bf; --accent:#2dd4bf;
+      --glass: rgba(255,255,255,0.03); --card:#0b1a24;
+      --success:#16a34a; --danger:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; font-family: Inter, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#03121a,#041822); color:#e6f0f5}
+    header{height:64px; display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.03)}
+    header h1{font-size:18px; margin:0}
+    .container{display:grid; grid-template-columns: 380px 1fr; gap:18px; padding:18px; height:calc(100% - 64px)}
+    /* left panel */
+    .panel{background:linear-gradient(180deg,var(--panel),#071018); border-radius:12px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.03); overflow:auto}
+    .section{margin-bottom:14px}
+    .section h2{margin:0 0 8px 0; font-size:13px; color:#e9f6f2}
+    label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+    input[type=range]{width:100%}
+    select, button, input[type=number]{width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit}
+    .row{display:flex; gap:8px; align-items:center}
+    .btn{display:inline-block;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04); background:var(--glass); color:var(--muted); cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,var(--accent),#06b6a4); color:#04211e; font-weight:700}
+    .status{font-size:13px; color:var(--muted)}
+    /* right area */
+    .stage-area{display:flex; flex-direction:column; gap:12px; height:100%}
+    .sim-card{flex:1; background:linear-gradient(180deg,#07121a,#051220); border-radius:12px; padding:12px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.03)}
+    .hud{position:absolute; left:12px; top:12px; z-index:10; display:flex; gap:10px; align-items:center}
+    .hud .badge{padding:6px 10px; border-radius:999px; background:rgba(255,255,255,0.03); color:var(--muted); font-size:13px}
+    canvas#sim{width:100%; height:100%; display:block; background:linear-gradient(180deg,#02131a,#04141a)}
+    .controls-bottom{display:flex; gap:8px; margin-top:8px; align-items:center}
+    .chart-card{height:200px; background:linear-gradient(180deg,#071018,#041018); border-radius:12px; padding:10px; border:1px solid rgba(255,255,255,0.03)}
+    footer{padding:10px 18px; color:var(--muted); font-size:13px}
+    /* responsive */
+    @media (max-width:980px){
+      .container{grid-template-columns:1fr; padding:12px; grid-auto-rows:auto}
+      .panel{order:2}
+      .stage-area{order:1}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>محاكاة معملية — توقيف الانقسام المؤقت (Endonuclease IV)</h1>
+    <div style="text-align:left">
+      <small style="color:var(--muted)">Demo • visual simulation — not experimental data</small>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- left control panel -->
+    <aside class="panel" aria-label="Controls panel">
+      <div class="section">
+        <h2>مرحلة المحاكاة</h2>
+        <label>Stage</label>
+        <select id="phaseSelect">
+          <option value="cancer">قبل التأثير — انقسام سرطاني (Fast/Irregular)</option>
+          <option value="during">أثناء التأثير — توقّف الانقسام</option>
+          <option value="after">بعد زوال التأثير — انقسام طبيعي (Normal)</option>
+        </select>
+        <div style="height:8px"></div>
+        <div class="row" style="gap:6px">
+          <button id="autoSeq" class="btn">تشغيل تسلسل تلقائي</button>
+          <button id="stopAuto" class="btn">إيقاف التسلسل</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>عدادات الخلايا</h2>
+        <label>عدد الخلايا: <span id="cellsCountLabel">60</span></label>
+        <input id="cellsCount" type="range" min="5" max="400" value="60">
+        <label>حجم الخلية (نطاق): <span id="sizeLabel">6 - 16</span></label>
+        <input id="sizeRange" type="range" min="4" max="28" value="16">
+      </div>
+
+      <div class="section">
+        <h2>ديناميكا الحركة والانقسام</h2>
+        <label>سرعة الحركة (speed): <span id="speedLabel">1.0</span></label>
+        <input id="speedRange" type="range" min="0" max="3" step="0.05" value="1">
+        <label>معدل الانقسام الأساسي (base division prob per frame): <span id="divLabel">0.0020</span></label>
+        <input id="divRange" type="range" min="0" max="0.02" step="0.0001" value="0.002">
+        <div style="height:8px"></div>
+        <label>تأثير البروتين — قيمة كسر الانقسام (%) أثناء التأثير:</label>
+        <input id="inhibitPercent" type="range" min="0" max="100" step="1" value="99">
+        <div style="height:6px"></div>
+        <div class="row">
+          <button id="applyProtein" class="btn primary">تطبيق تأثير البروتين الآن</button>
+          <button id="resetBtn" class="btn">إعادة ضبط المحاكاة</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>إحصاءات فورية</h2>
+        <div style="display:flex; gap:8px; margin-bottom:8px">
+          <div class="panel stat" style="flex:1; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02)">
+            <div style="font-size:12px;color:var(--muted)">الخلايا</div>
+            <div id="statCells" style="font-size:18px; font-weight:700">0</div>
+          </div>
+          <div class="panel stat" style="flex:1; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02)">
+            <div style="font-size:12px;color:var(--muted)">معدل الانقسام (آخر ثانية)</div>
+            <div id="statDivRate" style="font-size:18px; font-weight:700">0</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">ملاحظة: الأرقام تقريبية بصريًا للمساعدة في العرض.</div>
+      </div>
+
+      <div class="section">
+        <h2>تعليمات سريعة</h2>
+        <p style="color:var(--muted); font-size:13px; line-height:1.4">
+         اضبط المعاملات على اليسار ثم اضغط ي<strong>تطبيق تأثير البروتين</strong> أو استخدمي الاختيارات اليدوية. التسلسل التلقائي سينفّذ: السرطان → توقّف → طبيعي تلقائياً.
+        </p>
+      </div>
+
+    </aside>
+
+    <!-- right simulation & charts -->
+    <section class="stage-area">
+      <div class="sim-card">
+        <div class="hud">
+          <div class="badge" id="phaseBadge">Phase: Before (Cancer)</div>
+          <div class="badge" id="timeBadge">Time: 0s</div>
+        </div>
+        <canvas id="sim"></canvas>
+      </div>
+
+      <div style="display:flex; gap:12px">
+        <div class="chart-card" style="flex:1">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+            <div style="font-size:14px; color:#eaf7f3">معدل الانقسام مع الزمن</div>
+            <div style="font-size:12px; color:var(--muted)">events / sec</div>
+          </div>
+          <canvas id="chart" style="width:100%; height:140px; display:block"></canvas>
+        </div>
+
+        <div style="width:220px" class="chart-card">
+          <div style="font-size:14px; color:#eaf7f3; margin-bottom:6px">سجل الأحداث</div>
+          <div id="log" style="font-size:12px; color:var(--muted); max-height:140px; overflow:auto; padding-right:6px"></div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+ 
+  <script>
+  /* ============================================================
+     Comprehensive single-file lab-style cell division simulator
+     - Arabic UI
+     - Three phases: cancer (fast/irregular), during (protein effect), after (normal)
+     - Side controls: counts, sizes, speed, division probability, inhibition %
+     - Auto sequence and "apply protein" immediate effect
+     - Chart shows division events per second (simple rolling buffer)
+     ============================================================ */
+
+  (function(){
+    // canvas and sizing
+    const simCanvas = document.getElementById('sim');
+    const simCtx = simCanvas.getContext('2d');
+    const chartCanvas = document.getElementById('chart');
+    const chartCtx = chartCanvas.getContext('2d');
+    const logEl = document.getElementById('log');
+
+    function fitCanvases() {
+      // simulation canvas fills its parent
+      const rect = simCanvas.parentElement.getBoundingClientRect();
+      simCanvas.width = Math.floor(rect.width * devicePixelRatio);
+      simCanvas.height = Math.floor(rect.height * devicePixelRatio);
+      simCanvas.style.width = rect.width + 'px';
+      simCanvas.style.height = rect.height + 'px';
+      simCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+
+      // chart sizing
+      const crect = chartCanvas.parentElement.getBoundingClientRect();
+      chartCanvas.width = Math.floor(crect.width * devicePixelRatio);
+      chartCanvas.height = Math.floor(140 * devicePixelRatio); // fixed height
+      chartCanvas.style.width = crect.width + 'px';
+      chartCanvas.style.height = '140px';
+      chartCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    }
+    window.addEventListener('resize', fitCanvases);
+    setTimeout(fitCanvases,60);
+
+    // DOM controls
+    const phaseSelect = document.getElementById('phaseSelect');
+    const autoSeqBtn = document.getElementById('autoSeq');
+    const stopAutoBtn = document.getElementById('stopAuto');
+    const applyProteinBtn = document.getElementById('applyProtein');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const cellsCount = document.getElementById('cellsCount');
+    const cellsCountLabel = document.getElementById('cellsCountLabel');
+    const sizeRange = document.getElementById('sizeRange');
+    const sizeLabel = document.getElementById('sizeLabel');
+
+    const speedRange = document.getElementById('speedRange');
+    const speedLabel = document.getElementById('speedLabel');
+    const divRange = document.getElementById('divRange');
+    const divLabel = document.getElementById('divLabel');
+    const inhibitPercent = document.getElementById('inhibitPercent');
+
+    const phaseBadge = document.getElementById('phaseBadge');
+    const timeBadge = document.getElementById('timeBadge');
+
+    const statCells = document.getElementById('statCells');
+    const statDivRate = document.getElementById('statDivRate');
+
+    // update labels
+    cellsCount.addEventListener('input', ()=>{ cellsCountLabel.textContent = cellsCount.value });
+    sizeRange.addEventListener('input', ()=>{ sizeLabel.textContent = `6 - ${sizeRange.value}` });
+    speedRange.addEventListener('input', ()=>{ speedLabel.textContent = Number(speedRange.value).toFixed(2) });
+    divRange.addEventListener('input', ()=>{ divLabel.textContent = Number(divRange.value).toFixed(4) });
+
+    // simulation state
+    let particles = [];
+    let anim = null;
+    let running = true;
+    let simStart = performance.now();
+    let elapsedSec = 0;
+
+    // phases config
+    const PHASES = {
+      cancer: { color:'#ff6b6b', moveSpeed:1.6, divisionMultiplier: 3.0, label: 'قبل التأثير — انقسام سرطاني (Fast/Irregular)' },
+      during: { color:'#38bdf8', moveSpeed:0.02, divisionMultiplier: 0.01, label: 'أثناء التأثير — توقّف الانقسام' },
+      after: { color:'#60a5fa', moveSpeed:0.9, divisionMultiplier: 1.0, label: 'بعد الزوال — انقسام طبيعي (Normal)' }
+    };
+    let currentPhase = 'cancer';
+
+    // chart data (rolling buffer of last N seconds)
+    const CHART_SECONDS = 40;
+    const chartData = new Array(CHART_SECONDS).fill(0); // events per second
+    const chartTimes = new Array(CHART_SECONDS).fill(0);
+    let lastSecondTick = Math.floor(performance.now()/1000);
+    let currentSecondEvents = 0;
+
+    // log helper
+    function log(msg){
+      const el = document.createElement('div');
+      const t = new Date().toLocaleTimeString();
+      el.textContent = `[${t}] ${msg}`;
+      logEl.prepend(el);
+      // limit entries
+      if(logEl.children.length > 200) logEl.removeChild(logEl.lastChild);
+    }
+
+    // particle class
+    class Cell {
+      constructor(x,y,r){
+        this.x = x; this.y = y;
+        this.r = r || (Math.random()*8 + 6);
+        this.vx = (Math.random()*2-1);
+        this.vy = (Math.random()*2-1);
+        this.hue = Math.random()*60 + 190; // bluish range
+        this.age = 0;
+        this.divisionCooldown = 0; // frames until allowed to divide again
+      }
+      step(width, height, dt){
+        const baseSpeed = Number(speedRange.value);
+        const phaseCfg = PHASES[currentPhase];
+        // velocity jitter + damping
+        this.vx += (Math.random()*2-1) * 0.18 * baseSpeed;
+        this.vy += (Math.random()*2-1) * 0.18 * baseSpeed;
+        const speedMultiplier = phaseCfg.moveSpeed;
+        this.vx *= 0.92 * (1 - (1-speedMultiplier)*0.7);
+        this.vy *= 0.92 * (1 - (1-speedMultiplier)*0.7);
+        this.x += this.vx * (0.6 + baseSpeed*0.4);
+        this.y += this.vy * (0.6 + baseSpeed*0.4);
+
+        // wall bounce
+        if(this.x - this.r < 0){ this.x = this.r; this.vx *= -0.6; }
+        if(this.x + this.r > width){ this.x = width - this.r; this.vx *= -0.6; }
+        if(this.y - this.r < 0){ this.y = this.r; this.vy *= -0.6; }
+        if(this.y + this.r > height){ this.y = height - this.r; this.vy *= -0.6; }
+
+        this.age++;
+        if(this.divisionCooldown > 0) this.divisionCooldown--;
+      }
+      draw(ctx){
+        // glow
+        const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.r*2.2);
+        const color = PHASES[currentPhase].color;
+        grd.addColorStop(0, hexToRgba(color,0.9));
+        grd.addColorStop(0.6, hexToRgba(color,0.28));
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.r*1.6, 0, Math.PI*2); ctx.fill();
+
+        // membrane
+        ctx.beginPath();
+        ctx.lineWidth = Math.max(1, Math.min(3, this.r/7));
+        ctx.strokeStyle = hexToRgba(color,0.95);
+        ctx.fillStyle = hexToRgba(color,0.14);
+        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+        ctx.fill(); ctx.stroke();
+
+        // nucleus
+        ctx.beginPath();
+        ctx.fillStyle = hexToRgba(shiftHue(color,40),0.95);
+        const nx = this.x + Math.sin(this.age*0.02)*(this.r*0.08);
+        const ny = this.y + Math.cos(this.age*0.015)*(this.r*0.06);
+        ctx.arc(nx, ny, this.r*0.35, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    // util: convert hex to rgba string
+    function hexToRgba(hex, a){
+      const c = hex.replace('#','');
+      const r = parseInt(c.substring(0,2),16);
+      const g = parseInt(c.substring(2,4),16);
+      const b = parseInt(c.substring(4,6),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    function shiftHue(hex, deg){
+      // tiny hue shift by converting to hsl via canvas
+      const tmp = document.createElement('canvas');
+      tmp.width=1; tmp.height=1;
+      const tctx = tmp.getContext('2d');
+      tctx.fillStyle = hex; tctx.fillRect(0,0,1,1);
+      const data = tctx.getImageData(0,0,1,1).data;
+      // approximate shift: rotate channels (simple)
+      const r = data[0], g = data[1], b = data[2];
+      // naive rotate
+      const nr = g, ng = b, nb = r;
+      return `#${((1<<24)+(nr<<16)+(ng<<8)+nb).toString(16).slice(1)}`;
+    }
+
+    // initialize
+    function initParticles(){
+      particles = [];
+      const count = Number(cellsCount.value);
+      const maxSize = Number(sizeRange.value);
+      const w = simCanvas.clientWidth, h = simCanvas.clientHeight;
+      for(let i=0;i<count;i++){
+        const r = Math.random()*(maxSize-6) + 6;
+        const x = Math.random()*(w-2*r) + r;
+        const y = Math.random()*(h-2*r) + r;
+        particles.push(new Cell(x,y,r));
+      }
+      statCells.textContent = particles.length.toString();
+      log(`Initialized ${particles.length} cells.`);
+    }
+
+    initParticles();
+
+    // collision resolve
+    function resolveCollisions(list){
+      for(let i=0;i<list.length;i++){
+        const a = list[i];
+        for(let j=i+1;j<list.length;j++){
+          const b = list[j];
+          const dx = b.x - a.x; const dy = b.y - a.y;
+          const d = Math.hypot(dx,dy) || 0.0001;
+          const minD = a.r + b.r;
+          if(d < minD){
+            const overlap = (minD - d) / 2;
+            const nx = dx / d, ny = dy / d;
+            a.x -= nx * overlap; a.y -= ny * overlap;
+            b.x += nx * overlap; b.y += ny * overlap;
+            // simple velocity exchange
+            const k = 0.85;
+            const vx = (a.vx*a.r + b.vx*b.r)/(a.r+b.r);
+            const vy = (a.vy*a.r + b.vy*b.r)/(a.r+b.r);
+            a.vx = vx*k; a.vy = vy*k; b.vx = vx*k; b.vy = vy*k;
+          }
+        }
+      }
+    }
+
+    // division logic
+    function divisionStep(){
+      const baseProb = Number(divRange.value);
+      const inhibit = Number(inhibitPercent.value)/100;
+      const phaseCfg = PHASES[currentPhase];
+      const effectiveProb = baseProb * phaseCfg.divisionMultiplier * (currentPhase === 'during' ? (1 - inhibit) : 1);
+      const newCells = [];
+      for(let i=particles.length-1;i>=0;i--){
+        const c = particles[i];
+        // avoid immediate redivision
+        if(c.divisionCooldown > 0) continue;
+        if(Math.random() < effectiveProb && particles.length + newCells.length < 800){
+          if(c.r > 5){
+            const childR = Math.max(4, c.r * (0.55 + Math.random()*0.05));
+            c.r = Math.max(4, c.r * (0.55 + Math.random()*0.05));
+            const ang = Math.random()*Math.PI*2;
+            const d = c.r + childR + 1;
+            const nx = c.x + Math.cos(ang)*d;
+            const ny = c.y + Math.sin(ang)*d;
+            const ch = new Cell(nx, ny, childR);
+            // inherit some velocity
+            ch.vx = c.vx*0.5 + (Math.random()*2-1)*0.3;
+            ch.vy = c.vy*0.5 + (Math.random()*2-1)*0.3;
+            ch.divisionCooldown = 30; // brief cooldown
+            c.divisionCooldown = 30;
+            newCells.push(ch);
+            currentSecondEvents++;
+            log(`Division event: total cells -> ${particles.length + newCells.length}`);
+          }
+        }
+      }
+      if(newCells.length) particles.push(...newCells);
+    }
+
+    // main loop
+    function loop(){
+      if(!running) return;
+      const w = simCanvas.clientWidth, h = simCanvas.clientHeight;
+      // clear
+      simCtx.clearRect(0,0, w, h);
+      // subtle background
+      const g = simCtx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0,'#021116'); g.addColorStop(1,'#041219');
+      simCtx.fillStyle = g; simCtx.fillRect(0,0,w,h);
+
+      // physics step
+      for(const p of particles) p.step(w,h,1);
+      resolveCollisions(particles);
+      // division
+      divisionStep();
+
+      // draw particles
+      for(const p of particles) p.draw(simCtx);
+
+      // overlay HUD updates
+      statCells.textContent = particles.length.toString();
+      // second tick for chart
+      const nowSec = Math.floor(performance.now()/1000);
+      if(nowSec !== lastSecondTick){
+        // shift chart
+        chartData.shift(); chartData.push(currentSecondEvents);
+        chartTimes.shift(); chartTimes.push(nowSec);
+        // update stat
+        statDivRate.textContent = currentSecondEvents.toString();
+        currentSecondEvents = 0;
+        lastSecondTick = nowSec;
+      }
+      // render chart
+      renderChart(chartCtx, chartData);
+
+      // badges/time
+      phaseBadge.textContent = `المرحلة: ${PHASES[currentPhase].label}`;
+      elapsedSec = Math.floor((performance.now() - simStart)/1000);
+      timeBadge.textContent = `الزمن: ${elapsedSec}s`;
+
+      anim = requestAnimationFrame(loop);
+    }
+
+    // chart rendering: simple line chart
+    function renderChart(ctx, data){
+      const w = ctx.canvas.width / devicePixelRatio;
+      const h = ctx.canvas.height / devicePixelRatio;
+      ctx.clearRect(0,0,w,h);
+      // background
+      ctx.fillStyle = 'rgba(255,255,255,0.01)';
+      ctx.fillRect(0,0,w,h);
+      // axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(36,8); ctx.lineTo(36,h-20); ctx.lineTo(w-8,h-20); ctx.stroke();
+
+      const maxVal = Math.max(1, ...data);
+      // draw grid horizontal
+      ctx.fillStyle = 'rgba(159,176,191,0.12)';
+      ctx.font = '11px system-ui';
+      ctx.fillStyle = 'rgba(159,176,191,0.7)';
+      ctx.fillText('events/sec', 8, 12);
+      // plot
+      ctx.beginPath();
+      const left = 40, right = w-12;
+      const top = 8, bottom = h-28;
+      const plotW = right - left;
+      for(let i=0;i<data.length;i++){
+        const x = left + (i/(data.length-1))*plotW;
+        const y = bottom - (data[i]/maxVal)*(bottom-top);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = 'rgba(45,212,191,0.95)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // fill under curve
+      ctx.lineTo(right, bottom); ctx.lineTo(left, bottom); ctx.closePath();
+      ctx.fillStyle = 'rgba(45,212,191,0.08)';
+      ctx.fill();
+
+      // right-top label
+      ctx.fillStyle = 'rgba(159,176,191,0.7)';
+      ctx.font = '12px system-ui';
+      const latest = data[data.length-1];
+      ctx.fillText('Now: '+latest, w-80, 16);
+    }
+
+    // utilities for control actions
+    function setPhase(phase){
+      currentPhase = phase;
+      phaseSelect.value = phase;
+      simStart = performance.now(); // reset timer so the "time" relates to start
+      log(`Phase set to: ${phase}`);
+    }
+    phaseSelect.addEventListener('change', ()=>{ setPhase(phaseSelect.value) });
+
+    // apply protein immediate: switch to 'during' for duration then return to 'after'
+    let autoSeqTimer = null;
+    function applyProtein(durationSec=7){
+      setPhase('during');
+      log('Protein effect applied.');
+      // after duration -> go to after
+      if(autoSeqTimer) clearTimeout(autoSeqTimer);
+      autoSeqTimer = setTimeout(()=>{ setPhase('after'); log('Protein effect ended. Phase => after'); }, durationSec*1000);
+    }
+    applyProteinBtn.addEventListener('click', ()=> applyProtein(7));
+
+    // auto sequence: cancer -> during -> after with timings
+    let autoRunning = false;
+    let autoSeqHandles = [];
+    autoSeqBtn.addEventListener('click', ()=>{
+      if(autoRunning) return;
+      autoRunning = true;
+      log('Auto sequence started: cancer → during → after');
+      setPhase('cancer');
+      // after 6s -> during
+      const h1 = setTimeout(()=>{ setPhase('during'); }, 6000);
+      // after 6+7s -> after
+      const h2 = setTimeout(()=>{ setPhase('after'); autoRunning = false; log('Auto sequence completed'); }, 13000);
+      autoSeqHandles.push(h1,h2);
+    });
+    stopAutoBtn.addEventListener('click', ()=>{
+      for(const h of autoSeqHandles) clearTimeout(h);
+      autoSeqHandles = [];
+      autoRunning = false;
+      log('Auto sequence stopped');
+    });
+
+    // reset
+    resetBtn.addEventListener('click', ()=>{
+      initParticles();
+      // reset chart
+      for(let i=0;i<chartData.length;i++) chartData[i]=0;
+      simStart = performance.now();
+      log('Simulation reset');
+    });
+
+    // start loop
+    function start(){
+      running = true;
+      simStart = performance.now();
+      lastSecondTick = Math.floor(performance.now()/1000);
+      currentSecondEvents = 0;
+      if(!anim) loop();
+    }
+    start();
+
+    // initial chart fillback
+    for(let i=0;i<chartData.length;i++) chartData[i]=0;
+
+    // allow click-to-add cell on canvas
+    simCanvas.addEventListener('click',(e)=>{
+      const rect = simCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left);
+      const y = (e.clientY - rect.top);
+      particles.push(new Cell(x,y, Math.random()*6 + 6));
+      log('Added cell by click. Total: '+particles.length);
+    });
+
+    // record divisions into log and keep log trimmed (handled in log())
+    // ensure fit canvases
+    setTimeout(fitCanvases,120);
+  })();
+  </script>
+</body>
+</html>
