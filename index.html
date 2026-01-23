@@ -1,574 +1,517 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>محاكاة معملية — توقيف الانقسام المؤقت</title>
-  <style>
-    :root{
-      --bg:#08101a; --panel:#0d1720; --muted:#9fb0bf; --accent:#2dd4bf;
-      --glass: rgba(255,255,255,0.03); --card:#0b1a24;
-      --success:#16a34a; --danger:#ef4444;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%; margin:0; font-family: Inter, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#03121a,#041822); color:#e6f0f5}
-    header{height:64px; display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.03)}
-    header h1{font-size:18px; margin:0}
-    .container{display:grid; grid-template-columns: 380px 1fr; gap:18px; padding:18px; height:calc(100% - 64px)}
-    /* left panel */
-    .panel{background:linear-gradient(180deg,var(--panel),#071018); border-radius:12px; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.03); overflow:auto}
-    .section{margin-bottom:14px}
-    .section h2{margin:0 0 8px 0; font-size:13px; color:#e9f6f2}
-    label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
-    input[type=range]{width:100%}
-    select, button, input[type=number]{width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit}
-    .row{display:flex; gap:8px; align-items:center}
-    .btn{display:inline-block;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04); background:var(--glass); color:var(--muted); cursor:pointer}
-    .btn.primary{background:linear-gradient(180deg,var(--accent),#06b6a4); color:#04211e; font-weight:700}
-    .status{font-size:13px; color:var(--muted)}
-    /* right area */
-    .stage-area{display:flex; flex-direction:column; gap:12px; height:100%}
-    .sim-card{flex:1; background:linear-gradient(180deg,#07121a,#051220); border-radius:12px; padding:12px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,0.03)}
-    .hud{position:absolute; left:12px; top:12px; z-index:10; display:flex; gap:10px; align-items:center}
-    .hud .badge{padding:6px 10px; border-radius:999px; background:rgba(255,255,255,0.03); color:var(--muted); font-size:13px}
-    canvas#sim{width:100%; height:100%; display:block; background:linear-gradient(180deg,#02131a,#04141a)}
-    .controls-bottom{display:flex; gap:8px; margin-top:8px; align-items:center}
-    .chart-card{height:200px; background:linear-gradient(180deg,#071018,#041018); border-radius:12px; padding:10px; border:1px solid rgba(255,255,255,0.03)}
-    footer{padding:10px 18px; color:var(--muted); font-size:13px}
-    /* responsive */
-    @media (max-width:980px){
-      .container{grid-template-columns:1fr; padding:12px; grid-auto-rows:auto}
-      .panel{order:2}
-      .stage-area{order:1}
-    }
-  </style>
+<meta charset="UTF-8">
+<title>مكتبة أسيل</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f4f1;
+  --card:#ffffff;
+  --main:#c2a48d;
+  --dark:#3b2f2f;
+  --soft:#eadfd6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Cairo',sans-serif;
+  background:var(--bg);
+  color:var(--dark);
+}
+header{
+  padding:30px 60px;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+}
+.nav a{
+  margin-right:20px;
+  text-decoration:none;
+  font-weight:600;
+  color:var(--dark);
+  transition:.3s;
+}
+.nav a:hover{color:var(--main);}
+.hero{
+  padding:100px 60px;
+  display:grid;
+  grid-template-columns:1.3fr 1fr;
+  align-items:center;
+  gap:60px;
+}
+.hero h1{
+  font-size:52px;
+  margin-bottom:20px;
+}
+.hero p{
+  font-size:20px;
+  line-height:2;
+  color:#555;
+}
+.book-3d{
+  width:260px;
+  height:320px;
+  background:linear-gradient(135deg,#d8c2af,#b5967d);
+  border-radius:16px;
+  position:relative;
+  transform:skewY(-8deg);
+  box-shadow:25px 30px 50px rgba(0,0,0,.3);
+  transition:.3s;
+}
+.book-3d::before{
+  content:"";
+  position:absolute;
+  right:-25px;
+  top:0;
+  width:25px;
+  height:100%;
+  background:#a8876c;
+  border-radius:0 16px 16px 0;
+}
+.book-3d::after{
+  content:"";
+  position:absolute;
+  bottom:-25px;
+  left:0;
+  width:100%;
+  height:25px;
+  background:#8f7058;
+  transform:skewX(-45deg);
+}
+.library-name-frame{
+  margin:50px 60px;
+  padding:15px 30px;
+  display:inline-block;
+  background:linear-gradient(135deg,#d8c2af,#b5967d);
+  border-radius:24px;
+  box-shadow:0 10px 20px rgba(0,0,0,0.25);
+  font-size:32px;
+  font-weight:800;
+  color:#fff;
+}
+.section-title{
+  padding:40px 60px 20px;
+  font-size:34px;
+  font-weight:800;
+}
+.filter-buttons{
+  padding:0 60px;
+  margin-bottom:30px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.filter-buttons button{
+  padding:8px 15px;
+  font-size:14px;
+  border-radius:12px;
+  background:var(--main);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+  transition:.3s;
+}
+.filter-buttons button:hover{opacity:0.85;}
+.books, .favorites{
+  padding:0 60px 50px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:30px;
+}
+.book, .favorite-book{
+  background:var(--card);
+  border-radius:24px;
+  padding:20px;
+  box-shadow:0 15px 30px rgba(0,0,0,.08);
+  transition:.3s;
+  display:none;
+}
+.book:hover, .favorite-book:hover{
+  transform:translateY(-8px) scale(1.02);
+  box-shadow:0 20px 40px rgba(0,0,0,.15);
+}
+.cover{
+  height:200px;
+  border-radius:18px;
+  background:linear-gradient(135deg,var(--soft),var(--main));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+  text-align:center;
+  padding:15px;
+  transition:.3s;
+}
+.cover:hover{
+  transform:scale(1.05);
+  box-shadow:0 10px 20px rgba(0,0,0,0.2);
+}
+.info h3{
+  margin:15px 0 5px;
+  font-size:17px;
+}
+.info span{
+  font-size:14px;
+  color:#777;
+}
+.price{
+  font-size:22px;
+  font-weight:800;
+  margin:10px 0;
+  color:var(--main);
+}
+.fav{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:14px;
+  background:var(--main);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+  transition:.3s;
+}
+.fav:hover{opacity:0.85;}
+.contact{
+  background:var(--card);
+  margin:50px 60px 80px;
+  padding:50px;
+  border-radius:30px;
+  text-align:center;
+  box-shadow:0 20px 40px rgba(0,0,0,.1);
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:15px;
+}
+.contact a{
+  display:inline-block;
+  padding:14px 25px;
+  background:var(--main);
+  color:#fff;
+  text-decoration:none;
+  border-radius:30px;
+  font-weight:700;
+}
+input#search-input{
+  width:100%;
+  padding:10px 15px;
+  font-size:16px;
+  border-radius:12px;
+  border:1px solid #ccc;
+  margin-bottom:20px;
+}
+</style>
 </head>
 <body>
-  <header>
-    <h1>محاكاة معملية — توقيف الانقسام المؤقت (Endonuclease IV)</h1>
-    <div style="text-align:left">
-      <small style="color:var(--muted)">Demo • visual simulation — not experimental data</small>
-    </div>
-  </header>
 
-  <div class="container">
-    <!-- left control panel -->
-    <aside class="panel" aria-label="Controls panel">
-      <div class="section">
-        <h2>مرحلة المحاكاة</h2>
-        <label>Stage</label>
-        <select id="phaseSelect">
-          <option value="cancer">قبل التأثير — انقسام سرطاني (Fast/Irregular)</option>
-          <option value="during">أثناء التأثير — توقّف الانقسام</option>
-          <option value="after">بعد زوال التأثير — انقسام طبيعي (Normal)</option>
-        </select>
-        <div style="height:8px"></div>
-        <div class="row" style="gap:6px">
-          <button id="autoSeq" class="btn">تشغيل تسلسل تلقائي</button>
-          <button id="stopAuto" class="btn">إيقاف التسلسل</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>عدادات الخلايا</h2>
-        <label>عدد الخلايا: <span id="cellsCountLabel">60</span></label>
-        <input id="cellsCount" type="range" min="5" max="400" value="60">
-        <label>حجم الخلية (نطاق): <span id="sizeLabel">6 - 16</span></label>
-        <input id="sizeRange" type="range" min="4" max="28" value="16">
-      </div>
-
-      <div class="section">
-        <h2>ديناميكا الحركة والانقسام</h2>
-        <label>سرعة الحركة (speed): <span id="speedLabel">1.0</span></label>
-        <input id="speedRange" type="range" min="0" max="3" step="0.05" value="1">
-        <label>معدل الانقسام الأساسي (base division prob per frame): <span id="divLabel">0.0020</span></label>
-        <input id="divRange" type="range" min="0" max="0.02" step="0.0001" value="0.002">
-        <div style="height:8px"></div>
-        <label>تأثير البروتين — قيمة كسر الانقسام (%) أثناء التأثير:</label>
-        <input id="inhibitPercent" type="range" min="0" max="100" step="1" value="99">
-        <div style="height:6px"></div>
-        <div class="row">
-          <button id="applyProtein" class="btn primary">تطبيق تأثير البروتين الآن</button>
-          <button id="resetBtn" class="btn">إعادة ضبط المحاكاة</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>إحصاءات فورية</h2>
-        <div style="display:flex; gap:8px; margin-bottom:8px">
-          <div class="panel stat" style="flex:1; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02)">
-            <div style="font-size:12px;color:var(--muted)">الخلايا</div>
-            <div id="statCells" style="font-size:18px; font-weight:700">0</div>
-          </div>
-          <div class="panel stat" style="flex:1; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02)">
-            <div style="font-size:12px;color:var(--muted)">معدل الانقسام (آخر ثانية)</div>
-            <div id="statDivRate" style="font-size:18px; font-weight:700">0</div>
-          </div>
-        </div>
-        <div style="font-size:12px;color:var(--muted)">ملاحظة: الأرقام تقريبية بصريًا للمساعدة في العرض.</div>
-      </div>
-
-      <div class="section">
-        <h2>تعليمات سريعة</h2>
-        <p style="color:var(--muted); font-size:13px; line-height:1.4">
-         اضبط المعاملات على اليسار ثم اضغط ي<strong>تطبيق تأثير البروتين</strong> أو استخدمي الاختيارات اليدوية. التسلسل التلقائي سينفّذ: السرطان → توقّف → طبيعي تلقائياً.
-        </p>
-      </div>
-
-    </aside>
-
-    <!-- right simulation & charts -->
-    <section class="stage-area">
-      <div class="sim-card">
-        <div class="hud">
-          <div class="badge" id="phaseBadge">Phase: Before (Cancer)</div>
-          <div class="badge" id="timeBadge">Time: 0s</div>
-        </div>
-        <canvas id="sim"></canvas>
-      </div>
-
-      <div style="display:flex; gap:12px">
-        <div class="chart-card" style="flex:1">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
-            <div style="font-size:14px; color:#eaf7f3">معدل الانقسام مع الزمن</div>
-            <div style="font-size:12px; color:var(--muted)">events / sec</div>
-          </div>
-          <canvas id="chart" style="width:100%; height:140px; display:block"></canvas>
-        </div>
-
-        <div style="width:220px" class="chart-card">
-          <div style="font-size:14px; color:#eaf7f3; margin-bottom:6px">سجل الأحداث</div>
-          <div id="log" style="font-size:12px; color:var(--muted); max-height:140px; overflow:auto; padding-right:6px"></div>
-        </div>
-      </div>
-
-    </section>
+<header>
+  <div class="nav">
+    <a href="#books">الكتب</a>
+    <a href="#contact">تواصل معنا</a>
   </div>
+</header>
 
- 
-  <script>
-  /* ============================================================
-     Comprehensive single-file lab-style cell division simulator
-     - Arabic UI
-     - Three phases: cancer (fast/irregular), during (protein effect), after (normal)
-     - Side controls: counts, sizes, speed, division probability, inhibition %
-     - Auto sequence and "apply protein" immediate effect
-     - Chart shows division events per second (simple rolling buffer)
-     ============================================================ */
+<section class="hero">
+  <div>
+    <h1> مكتبة أسيل</h1>
+    <p>
+      مرحبًا بك في عالم القراءة — تجربة كتب متكاملة في جميع التصنيفات.
+    </p>
+  </div>
+  <div class="book-3d"></div>
+</section>
 
-  (function(){
-    // canvas and sizing
-    const simCanvas = document.getElementById('sim');
-    const simCtx = simCanvas.getContext('2d');
-    const chartCanvas = document.getElementById('chart');
-    const chartCtx = chartCanvas.getContext('2d');
-    const logEl = document.getElementById('log');
+<!-- البحث -->
+<div style="padding:0 60px;">
+  <input type="text" id="search-input" placeholder="ابحث عن كتاب...">
+</div>
 
-    function fitCanvases() {
-      // simulation canvas fills its parent
-      const rect = simCanvas.parentElement.getBoundingClientRect();
-      simCanvas.width = Math.floor(rect.width * devicePixelRatio);
-      simCanvas.height = Math.floor(rect.height * devicePixelRatio);
-      simCanvas.style.width = rect.width + 'px';
-      simCanvas.style.height = rect.height + 'px';
-      simCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+<!-- تصنيفات الكتب -->
+<div class="section-title" id="books">📖 الكتب</div>
+<div class="filter-buttons">
+  <button onclick="filterBooks('all')">الكل</button>
+  <button onclick="filterBooks('رومانسي')">رومانسي</button>
+  <button onclick="filterBooks('رعب')">رعب</button>
+  <button onclick="filterBooks('تنمية بشرية')">تنمية بشرية</button>
+  <button onclick="filterBooks('ديني')">ديني</button>
+  <button onclick="filterBooks('جديد')">جديد</button>
+  <button onclick="filterBooks('فانتازيا')">فانتازيا</button>
+</div>
 
-      // chart sizing
-      const crect = chartCanvas.parentElement.getBoundingClientRect();
-      chartCanvas.width = Math.floor(crect.width * devicePixelRatio);
-      chartCanvas.height = Math.floor(140 * devicePixelRatio); // fixed height
-      chartCanvas.style.width = crect.width + 'px';
-      chartCanvas.style.height = '140px';
-      chartCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-    }
-    window.addEventListener('resize', fitCanvases);
-    setTimeout(fitCanvases,60);
+<div class="books" id="books-container">
+  <!-- هنا تحطي قائمة الكتب الكاملة -->
+</div>
 
-    // DOM controls
-    const phaseSelect = document.getElementById('phaseSelect');
-    const autoSeqBtn = document.getElementById('autoSeq');
-    const stopAutoBtn = document.getElementById('stopAuto');
-    const applyProteinBtn = document.getElementById('applyProtein');
-    const resetBtn = document.getElementById('resetBtn');
+<!-- قسم المفضلة -->
+<div class="section-title">⭐ المفضلة</div>
+<div class="favorites" id="favorites-container"></div>
 
-    const cellsCount = document.getElementById('cellsCount');
-    const cellsCountLabel = document.getElementById('cellsCountLabel');
-    const sizeRange = document.getElementById('sizeRange');
-    const sizeLabel = document.getElementById('sizeLabel');
+<!-- قسم التواصل -->
+<div class="contact" id="contact">
+  <a href="tel:01152518821">📞 خدمة العملاء</a>
+  <a href="https://whatsapp.com/channel/0029Vb02vVmDDmFcMcNADm1x" target="_blank">💬 القناة</a>
+  <a href="https://wa.me/201152518821" target="_blank">💬 واتساب</a>
+</div>
 
-    const speedRange = document.getElementById('speedRange');
-    const speedLabel = document.getElementById('speedLabel');
-    const divRange = document.getElementById('divRange');
-    const divLabel = document.getElementById('divLabel');
-    const inhibitPercent = document.getElementById('inhibitPercent');
+<script>
+// هنا مكان تعريف allBooks
+const allBooks = [
+// ==== كتب رعب ====
+{title:'مدينة الموتى', category:'رعب', price:55},
+{title:'المرتد', category:'رعب', price:55},
+{title:'جمرة', category:'رعب', price:55},
+{title:'هسيس', category:'رعب', price:55},
+{title:'لقاء مع كاتب رعب', category:'رعب', price:55},
+{title:'العوسج', category:'رعب', price:55},
+{title:'انتيخريستوس', category:'رعب', price:55},
+{title:'سر الغرفة 207', category:'رعب', price:55},
+{title:'شبكة العنكبوت', category:'رعب', price:55},
+{title:'اجيج', category:'رعب', price:55},
+{title:'جحيم العابرين', category:'رعب', price:55},
+{title:'أرض القرابين', category:'رعب', price:55},
+{title:'سعد الدباس', category:'رعب', price:55},
+{title:'ابتسم فانت ميت', category:'رعب', price:55},
+{title:'الجزار', category:'رعب', price:55},
+{title:'أذكار الموت', category:'رعب', price:55},
+{title:'العبرات', category:'رعب', price:55},
+{title:'الغيهب', category:'رعب', price:55},
+{title:'الانتهازي', category:'رعب', price:55},
+{title:'ليلة ماطرة', category:'رعب', price:55},
+{title:'الوليمة', category:'رعب', price:55},
+{title:'النداء', category:'رعب', price:55},
+{title:'ليلة ظهور القرين', category:'رعب', price:55},
+{title:'سفاح الأزقة', category:'رعب', price:55},
+{title:'نصف ميت', category:'رعب', price:55},
+{title:'نوح المذبوح', category:'رعب', price:55},
+{title:'جثة لذيذة', category:'رعب', price:55},
+{title:'بيتشيني', category:'رعب', price:100},
+{title:'هذا ما حدث معها', category:'رعب', price:100},
+{title:'الشيطان والمياه المظلمة', category:'رعب', price:135},
+{title:'انني اتعفن رعبا', category:'رعب', price:110},
+{title:'فندق المقبرة', category:'رعب', price:110},
+{title:'اكتب حتى لا يكلني الشيطان', category:'رعب', price:90},
+{title:'دماء تتاروبيت', category:'رعب', price:75},
+{title:'يحدث ليلا', category:'رعب', price:70},
 
-    const phaseBadge = document.getElementById('phaseBadge');
-    const timeBadge = document.getElementById('timeBadge');
 
-    const statCells = document.getElementById('statCells');
-    const statDivRate = document.getElementById('statDivRate');
+// ==== كتب فانتازيا ====
+{title:'غصون البندق الجزء الأول او الثاني', category:'فانتازيا', price:55},
+{title:'آرسس الجزء الأول', category:'فانتازيا', price:55},
+{title:'آرسس الجزء الثاني', category:'فانتازيا', price:55},
+{title:'متجر دالجوت الأحلام ج1', category:'فانتازيا', price:55},
+{title:'متجر دالجوت الأحلام ج2', category:'فانتازيا', price:55},
+{title:'انتريستا الجزء الأول', category:'فانتازيا', price:55},
+{title:'انتريستا الجزء الثاني', category:'فانتازيا', price:55},
+{title:'لاراسيا', category:'فانتازيا', price:55},
+{title:'خوف الجزء الأول', category:'فانتازيا', price:55},
+{title:'خوف الجزء الثاني', category:'فانتازيا', price:55},
+{title:'خوف الجزء الثالث', category:'فانتازيا', price:55},
+{title:'أرض زيكولا', category:'فانتازيا', price:55},
+{title:'أماريتا', category:'فانتازيا', price:55},
+{title:'وادي الذئاب', category:'فانتازيا', price:55},
+{title:'واحة اليعقوب', category:'فانتازيا', price:55},
+{title:'فتاة الياقة الزرقاء', category:'فانتازيا', price:55},
+{title:'قواعد جارتين', category:'فانتازيا', price:55},
+{title:'دقات الشامو', category:'فانتازيا', price:55},
+{title:'أمواج أكما', category:'فانتازيا', price:55},
+{title:'صاحب الظل الطويل', category:'فانتازيا', price:55},
+{title:'مر مثل القهوة حلو مثل الشيكولاته', category:'فانتازيا', price:55},
+{title:'يوتوبيا', category:'فانتازيا', price:55},
+{title:'أزر', category:'فانتازيا', price:70},
+{title:'قنبلة للاستخدام الشخصي', category:'فانتازيا', price:75},
+{title:'جاز وروك', category:'فانتازيا', price:70},
+{title:'كويكول', category:'فانتازيا', price:70},
+{title:'سقطري', category:'فانتازيا', price:70},
+{title:'أبادول', category:'فانتازيا', price:70},
+{title:'سلسلة بساتين عربستان', category:'فانتازيا', price:540},
+{title:'حقل التفاح ', category:'فانتازيا', price:100},
+{title:'متلازمه فريجولي', category:'فانتازيا', price:100},
+{title:'.005', category:'فانتازيا', price:70},
+{title:'لأنها كيارا', category:'فانتازيا', price:95},
+{title:'مملكة الكوابيس والضباب', category:'فانتازيا', price:70},
+{title:'البارون', category:'فانتازيا', price:95},
+{title:'العرش الأسود', category:'فانتازيا', price:100},
+{title:'شمس منتصف الليل', category:'فانتازيا', price:100},
+{title:'الغرباء', category:'فانتازيا', price:100},
+{title:'الغريب', category:'فانتازيا', price:100},
+{title:'أوراق شمعون المصري', category:'فانتازيا', price:95},
 
-    // update labels
-    cellsCount.addEventListener('input', ()=>{ cellsCountLabel.textContent = cellsCount.value });
-    sizeRange.addEventListener('input', ()=>{ sizeLabel.textContent = `6 - ${sizeRange.value}` });
-    speedRange.addEventListener('input', ()=>{ speedLabel.textContent = Number(speedRange.value).toFixed(2) });
-    divRange.addEventListener('input', ()=>{ divLabel.textContent = Number(divRange.value).toFixed(4) });
+// ==== كتب رومانسية ====
+{title:'رومانسي', category:'رومانسي', price:55},
+{title:'انت كل أشيائي الجميلة', category:'رومانسي', price:55},
+{title:'ردني إليك', category:'رومانسي', price:55},
+{title:'إلى ما لا نهاية', category:'رومانسي', price:55},
+{title:'ماذا لو', category:'رومانسي', price:55},
+{title:'سأرحل', category:'رومانسي', price:55},
 
-    // simulation state
-    let particles = [];
-    let anim = null;
-    let running = true;
-    let simStart = performance.now();
-    let elapsedSec = 0;
+// ==== كتب دينية إضافية ====
+{title:'علمتني سورة البقرة', category:'ديني', price:55},
+{title:'معجزات الذكر', category:'ديني', price:55},
+{title:'وبالحق أنزلنا', category:'ديني', price:55},
+{title:'والذين معه', category:'ديني', price:55},
+{title:'رسائل من القرآن', category:'ديني', price:55},
+{title:'رسائل من التابعين', category:'ديني', price:55},
+{title:'رسائل من النبي', category:'ديني', price:55},
+{title:'رسائل من الصحابة', category:'ديني', price:55},
+{title:'على خطى الرسول', category:'ديني', price:55},
+{title:'أنت أيضًا صحابية', category:'ديني', price:55},
+{title:'مدرسة الصحابة', category:'ديني', price:55},
+{title:'نحن نقص عليك', category:'ديني', price:55},
+{title:'عمر بن الخطاب', category:'ديني', price:55},
+{title:'زاد', category:'ديني', price:55},
+{title:'علمتني إيه', category:'ديني', price:55},
+{title:'مع النبي', category:'ديني', price:55},
+{title:'من كل إيه فكرة', category:'ديني', price:55},
+{title:'علمني موسى', category:'ديني', price:55},
+{title:'كوني صحابية', category:'ديني', price:55},
+{title:'يوم في الجنة', category:'ديني', price:55},
+{title:'يوم في حياة النبي', category:'ديني', price:55},
+{title:'إلى المنكسرة قلوبهم', category:'ديني', price:55},
+{title:'مفاتيح خزائن الله', category:'ديني', price:55},
+{title:'فاستجبنا له', category:'ديني', price:55},
+// ==== كتب تنمية بشرية ====
+{title:'أفكار تجعلك تحب الحياة', category:'تنمية بشرية', price:55},
+{title:'فن الذكاء الاجتماعي', category:'تنمية بشرية', price:55},
+{title:'سيكولوجية الرحيل', category:'تنمية بشرية', price:55},
+{title:'أغنى رجل في بابل', category:'تنمية بشرية', price:55},
+{title:'أول عشرين ساعة', category:'تنمية بشرية', price:55},
+{title:'اقرأ الناس كأنهم كتاب', category:'تنمية بشرية', price:55},
+{title:'الهشاشة النفسية', category:'تنمية بشرية', price:55},
+{title:'فن التأثير في الآخرين', category:'تنمية بشرية', price:55},
+{title:'اصنع وقت أكثر من المتاح', category:'تنمية بشرية', price:55},
+{title:'فكر كأنك طبيب نفسي', category:'تنمية بشرية', price:55},
+{title:'لا تكن لطيفًا أكثر من اللازم', category:'تنمية بشرية', price:55},
+{title:'متعة أن تكون في العشرين', category:'تنمية بشرية', price:55},
+{title:'محاط بالحمقى', category:'تنمية بشرية', price:55},
+{title:'متعة أن تكون في الثلاثين', category:'تنمية بشرية', price:55},
+{title:'محاط بالمرضى النفسيين', category:'تنمية بشرية', price:55},
+{title:'نادي الخامسة صباحًا', category:'تنمية بشرية', price:55},
+{title:'السماح بالرحيل', category:'تنمية بشرية', price:55},
+{title:'قوة العادات', category:'تنمية بشرية', price:55},
+{title:'المرونة النفسية', category:'تنمية بشرية', price:55},
+{title:'فكر وزاد ثراء', category:'تنمية بشرية', price:55},
+{title:'من الذي حرك قطعة الجبن', category:'تنمية بشرية', price:55},
+{title:'كيف تبيع أي شيء لأي إنسان', category:'تنمية بشرية', price:55},
+{title:'كن نفسك كل شيء', category:'تنمية بشرية', price:55},
+{title:'كن أقوى من مشاعرك', category:'تنمية بشرية', price:55},
+{title:'من الصفر إلى واحد', category:'تنمية بشرية', price:55},
+{title:'كن الشخص الذي يجعلك سعيدًا', category:'تنمية بشرية', price:55},
+{title:'من الصفر', category:'تنمية بشرية', price:55},
+{title:'كيف تؤثر على الآخرين', category:'تنمية بشرية', price:55},
+{title:'نظرية الفستق الجزء الأول', category:'تنمية بشرية', price:55},
+{title:'نظرية الفستق الجزء الثاني', category:'تنمية بشرية', price:55},
+{title:'الخروج عن النص', category:'تنمية بشرية', price:55},
+{title:'الخروج عن النص من جديد', category:'تنمية بشرية', price:55},
+{title:'أبي الذي أكره', category:'تنمية بشرية', price:55},
+{title:'تصرفي كسيدة وفكري كرجل', category:'تنمية بشرية', price:55},
+{title:'قوة الفشل', category:'تنمية بشرية', price:55},
+{title:'فكر وتصرف كأنك قط', category:'تنمية بشرية', price:55},
+{title:'أحببت وغدًا', category:'تنمية بشرية', price:55},
+{title:'العادات الذرية', category:'تنمية بشرية', price:55},
+{title:'جلسات نفسية', category:'تنمية بشرية', price:55},
+{title:'فن اللامبالاة', category:'تنمية بشرية', price:55},
+{title:'قهوة صباحية مع النفس', category:'تنمية بشرية', price:55},
+{title:'فن قراءة العقول', category:'تنمية بشرية', price:55},
+{title:'دليل استخدام الإنسان', category:'تنمية بشرية', price:55},
+{title:'العادات السبع للمراهقين', category:'تنمية بشرية', price:55},
+{title:'لماذا يحب الرجال العاهرات', category:'تنمية بشرية', price:55},
+{title:'علاقات خطرة', category:'تنمية بشرية', price:55},
+{title:'قوانين الصراع النفسي', category:'تنمية بشرية', price:55},
+{title:'لغة الجسد', category:'تنمية بشرية', price:55},
+{title:'عقل بلا جسد', category:'تنمية بشرية', price:55},
+{title:'الوحش الذي يسكنك', category:'تنمية بشرية', price:55},
+{title:'الأب الغني', category:'تنمية بشرية', price:55},
+{title:'أسرار عقل المليونير', category:'تنمية بشرية', price:55},
+{title:'لغات الحب', category:'تنمية بشرية', price:55},
+{title:'اعرف وجهك الآخر', category:'تنمية بشرية', price:55},
+{title:'عقدك النفسية', category:'تنمية بشرية', price:55},
+{title:'عيادة نفسية من دخل غرفتك', category:'تنمية بشرية', price:55},
+{title:'معجزة الصباح', category:'تنمية بشرية', price:55},
+{title:'مفتقد للحياة', category:'تنمية بشرية', price:55},
+{title:'فيتامينات نفسية', category:'تنمية بشرية', price:55},
+{title:'دع القلق وابدأ الحياة', category:'تنمية بشرية', price:55},
+{title:'طاقة الأنوثة', category:'تنمية بشرية', price:55},
+{title:'فن التركيز والإنجاز', category:'تنمية بشرية', price:55},
+{title:'نعمة الألم', category:'تنمية بشرية', price:55},
+{title:'عن شيء اسمه الحب', category:'تنمية بشرية', price:55},
+{title:'الدحيح', category:'تنمية بشرية', price:55},
+{title:'تعافيت', category:'تنمية بشرية', price:55},
+{title:'كيف تعيش كل ساعة', category:'تنمية بشرية', price:55},
+{title:'تحدث أمام الجميع بجاذبية', category:'تنمية بشرية', price:55},
+{title:'ملفات سرية من العيادة النفسية', category:'تنمية بشرية', price:55},
+{title:'لا بطعم الفلامنكو', category:'تنمية بشرية', price:55},
+{title:'صباح استثنائي', category:'تنمية بشرية', price:55},
+{title:'فن الاحتواء الذات', category:'تنمية بشرية', price:55},
+{title:'التغيير للأفضل', category:'تنمية بشرية', price:55},
+{title:'قهوة باليورنيوم', category:'تنمية بشرية', price:55},
+{title:'قوة عقلك الباطن', category:'تنمية بشرية', price:55},
+{title:'ابني مشتت الانتباه', category:'تنمية بشرية', price:55},
+{title:'ذكي ولكن مشتت', category:'تنمية بشرية', price:55},
+{title:'الذكاء العاطفي في التربية', category:'تنمية بشرية', price:55},
 
-    // phases config
-    const PHASES = {
-      cancer: { color:'#ff6b6b', moveSpeed:1.6, divisionMultiplier: 3.0, label: 'قبل التأثير — انقسام سرطاني (Fast/Irregular)' },
-      during: { color:'#38bdf8', moveSpeed:0.02, divisionMultiplier: 0.01, label: 'أثناء التأثير — توقّف الانقسام' },
-      after: { color:'#60a5fa', moveSpeed:0.9, divisionMultiplier: 1.0, label: 'بعد الزوال — انقسام طبيعي (Normal)' }
-    };
-    let currentPhase = 'cancer';
+// ==== كتب جديد ====
+{title:'الزمهرير', category:'جديد', price:95},
+{title:'قضية مخالب القط', category:'جديد', price:95},
+{title:'مينتو', category:'جديد', price:95},
 
-    // chart data (rolling buffer of last N seconds)
-    const CHART_SECONDS = 40;
-    const chartData = new Array(CHART_SECONDS).fill(0); // events per second
-    const chartTimes = new Array(CHART_SECONDS).fill(0);
-    let lastSecondTick = Math.floor(performance.now()/1000);
-    let currentSecondEvents = 0;
+];
 
-    // log helper
-    function log(msg){
-      const el = document.createElement('div');
-      const t = new Date().toLocaleTimeString();
-      el.textContent = `[${t}] ${msg}`;
-      logEl.prepend(el);
-      // limit entries
-      if(logEl.children.length > 200) logEl.removeChild(logEl.lastChild);
-    }
+// توليد الكتب
+const container = document.getElementById('books-container');
+allBooks.forEach(book=>{
+  const div = document.createElement('div');
+  div.className='book';
+  div.dataset.category = book.category;
+  div.dataset.price = book.price;
+  div.dataset.title = book.title.toLowerCase();
+  div.innerHTML=`
+    <div class="cover">${book.title}</div>
+    <div class="info">
+      <h3>${book.title}</h3>
+      <span>${book.category}</span>
+      <div class="price">${book.price} ج.م</div>
+      <button class="fav">❤️ أضف للمفضلة</button>
+    </div>
+  `;
+  container.appendChild(div);
+});
 
-    // particle class
-    class Cell {
-      constructor(x,y,r){
-        this.x = x; this.y = y;
-        this.r = r || (Math.random()*8 + 6);
-        this.vx = (Math.random()*2-1);
-        this.vy = (Math.random()*2-1);
-        this.hue = Math.random()*60 + 190; // bluish range
-        this.age = 0;
-        this.divisionCooldown = 0; // frames until allowed to divide again
-      }
-      step(width, height, dt){
-        const baseSpeed = Number(speedRange.value);
-        const phaseCfg = PHASES[currentPhase];
-        // velocity jitter + damping
-        this.vx += (Math.random()*2-1) * 0.18 * baseSpeed;
-        this.vy += (Math.random()*2-1) * 0.18 * baseSpeed;
-        const speedMultiplier = phaseCfg.moveSpeed;
-        this.vx *= 0.92 * (1 - (1-speedMultiplier)*0.7);
-        this.vy *= 0.92 * (1 - (1-speedMultiplier)*0.7);
-        this.x += this.vx * (0.6 + baseSpeed*0.4);
-        this.y += this.vy * (0.6 + baseSpeed*0.4);
+// فلترة حسب التصنيف
+function filterBooks(category) {
+  const books = document.querySelectorAll('#books-container .book');
+  books.forEach(book=>{
+    if(category==='all') book.style.display='block';
+    else book.style.display=(book.dataset.category===category)?'block':'none';
+  });
+}
 
-        // wall bounce
-        if(this.x - this.r < 0){ this.x = this.r; this.vx *= -0.6; }
-        if(this.x + this.r > width){ this.x = width - this.r; this.vx *= -0.6; }
-        if(this.y - this.r < 0){ this.y = this.r; this.vy *= -0.6; }
-        if(this.y + this.r > height){ this.y = height - this.r; this.vy *= -0.6; }
+// البحث
+const searchInput = document.getElementById('search-input');
+searchInput.addEventListener('input', function() {
+  const query = this.value.toLowerCase();
+  const books = document.querySelectorAll('#books-container .book');
+  books.forEach(book=>{
+    const title = book.dataset.title;
+    const category = book.dataset.category.toLowerCase();
+    book.style.display = (title.includes(query) || category.includes(query)) ? 'block' : 'none';
+  });
+});
 
-        this.age++;
-        if(this.divisionCooldown > 0) this.divisionCooldown--;
-      }
-      draw(ctx){
-        // glow
-        const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.r*2.2);
-        const color = PHASES[currentPhase].color;
-        grd.addColorStop(0, hexToRgba(color,0.9));
-        grd.addColorStop(0.6, hexToRgba(color,0.28));
-        grd.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = grd;
-        ctx.beginPath(); ctx.arc(this.x, this.y, this.r*1.6, 0, Math.PI*2); ctx.fill();
+// إضافة للمفضلة
+document.addEventListener('click', function(e){
+  if(e.target.classList.contains('fav')){
+    const bookDiv = e.target.closest('.book');
+    const favContainer = document.getElementById('favorites-container');
+    const clone = bookDiv.cloneNode(true);
+    clone.classList.remove('book');
+    clone.classList.add('favorite-book');
+    clone.querySelector('.fav').remove();
+    favContainer.appendChild(clone);
+  }
+});
+</script>
 
-        // membrane
-        ctx.beginPath();
-        ctx.lineWidth = Math.max(1, Math.min(3, this.r/7));
-        ctx.strokeStyle = hexToRgba(color,0.95);
-        ctx.fillStyle = hexToRgba(color,0.14);
-        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        ctx.fill(); ctx.stroke();
-
-        // nucleus
-        ctx.beginPath();
-        ctx.fillStyle = hexToRgba(shiftHue(color,40),0.95);
-        const nx = this.x + Math.sin(this.age*0.02)*(this.r*0.08);
-        const ny = this.y + Math.cos(this.age*0.015)*(this.r*0.06);
-        ctx.arc(nx, ny, this.r*0.35, 0, Math.PI*2);
-        ctx.fill();
-      }
-    }
-
-    // util: convert hex to rgba string
-    function hexToRgba(hex, a){
-      const c = hex.replace('#','');
-      const r = parseInt(c.substring(0,2),16);
-      const g = parseInt(c.substring(2,4),16);
-      const b = parseInt(c.substring(4,6),16);
-      return `rgba(${r},${g},${b},${a})`;
-    }
-    function shiftHue(hex, deg){
-      // tiny hue shift by converting to hsl via canvas
-      const tmp = document.createElement('canvas');
-      tmp.width=1; tmp.height=1;
-      const tctx = tmp.getContext('2d');
-      tctx.fillStyle = hex; tctx.fillRect(0,0,1,1);
-      const data = tctx.getImageData(0,0,1,1).data;
-      // approximate shift: rotate channels (simple)
-      const r = data[0], g = data[1], b = data[2];
-      // naive rotate
-      const nr = g, ng = b, nb = r;
-      return `#${((1<<24)+(nr<<16)+(ng<<8)+nb).toString(16).slice(1)}`;
-    }
-
-    // initialize
-    function initParticles(){
-      particles = [];
-      const count = Number(cellsCount.value);
-      const maxSize = Number(sizeRange.value);
-      const w = simCanvas.clientWidth, h = simCanvas.clientHeight;
-      for(let i=0;i<count;i++){
-        const r = Math.random()*(maxSize-6) + 6;
-        const x = Math.random()*(w-2*r) + r;
-        const y = Math.random()*(h-2*r) + r;
-        particles.push(new Cell(x,y,r));
-      }
-      statCells.textContent = particles.length.toString();
-      log(`Initialized ${particles.length} cells.`);
-    }
-
-    initParticles();
-
-    // collision resolve
-    function resolveCollisions(list){
-      for(let i=0;i<list.length;i++){
-        const a = list[i];
-        for(let j=i+1;j<list.length;j++){
-          const b = list[j];
-          const dx = b.x - a.x; const dy = b.y - a.y;
-          const d = Math.hypot(dx,dy) || 0.0001;
-          const minD = a.r + b.r;
-          if(d < minD){
-            const overlap = (minD - d) / 2;
-            const nx = dx / d, ny = dy / d;
-            a.x -= nx * overlap; a.y -= ny * overlap;
-            b.x += nx * overlap; b.y += ny * overlap;
-            // simple velocity exchange
-            const k = 0.85;
-            const vx = (a.vx*a.r + b.vx*b.r)/(a.r+b.r);
-            const vy = (a.vy*a.r + b.vy*b.r)/(a.r+b.r);
-            a.vx = vx*k; a.vy = vy*k; b.vx = vx*k; b.vy = vy*k;
-          }
-        }
-      }
-    }
-
-    // division logic
-    function divisionStep(){
-      const baseProb = Number(divRange.value);
-      const inhibit = Number(inhibitPercent.value)/100;
-      const phaseCfg = PHASES[currentPhase];
-      const effectiveProb = baseProb * phaseCfg.divisionMultiplier * (currentPhase === 'during' ? (1 - inhibit) : 1);
-      const newCells = [];
-      for(let i=particles.length-1;i>=0;i--){
-        const c = particles[i];
-        // avoid immediate redivision
-        if(c.divisionCooldown > 0) continue;
-        if(Math.random() < effectiveProb && particles.length + newCells.length < 800){
-          if(c.r > 5){
-            const childR = Math.max(4, c.r * (0.55 + Math.random()*0.05));
-            c.r = Math.max(4, c.r * (0.55 + Math.random()*0.05));
-            const ang = Math.random()*Math.PI*2;
-            const d = c.r + childR + 1;
-            const nx = c.x + Math.cos(ang)*d;
-            const ny = c.y + Math.sin(ang)*d;
-            const ch = new Cell(nx, ny, childR);
-            // inherit some velocity
-            ch.vx = c.vx*0.5 + (Math.random()*2-1)*0.3;
-            ch.vy = c.vy*0.5 + (Math.random()*2-1)*0.3;
-            ch.divisionCooldown = 30; // brief cooldown
-            c.divisionCooldown = 30;
-            newCells.push(ch);
-            currentSecondEvents++;
-            log(`Division event: total cells -> ${particles.length + newCells.length}`);
-          }
-        }
-      }
-      if(newCells.length) particles.push(...newCells);
-    }
-
-    // main loop
-    function loop(){
-      if(!running) return;
-      const w = simCanvas.clientWidth, h = simCanvas.clientHeight;
-      // clear
-      simCtx.clearRect(0,0, w, h);
-      // subtle background
-      const g = simCtx.createLinearGradient(0,0,w,h);
-      g.addColorStop(0,'#021116'); g.addColorStop(1,'#041219');
-      simCtx.fillStyle = g; simCtx.fillRect(0,0,w,h);
-
-      // physics step
-      for(const p of particles) p.step(w,h,1);
-      resolveCollisions(particles);
-      // division
-      divisionStep();
-
-      // draw particles
-      for(const p of particles) p.draw(simCtx);
-
-      // overlay HUD updates
-      statCells.textContent = particles.length.toString();
-      // second tick for chart
-      const nowSec = Math.floor(performance.now()/1000);
-      if(nowSec !== lastSecondTick){
-        // shift chart
-        chartData.shift(); chartData.push(currentSecondEvents);
-        chartTimes.shift(); chartTimes.push(nowSec);
-        // update stat
-        statDivRate.textContent = currentSecondEvents.toString();
-        currentSecondEvents = 0;
-        lastSecondTick = nowSec;
-      }
-      // render chart
-      renderChart(chartCtx, chartData);
-
-      // badges/time
-      phaseBadge.textContent = `المرحلة: ${PHASES[currentPhase].label}`;
-      elapsedSec = Math.floor((performance.now() - simStart)/1000);
-      timeBadge.textContent = `الزمن: ${elapsedSec}s`;
-
-      anim = requestAnimationFrame(loop);
-    }
-
-    // chart rendering: simple line chart
-    function renderChart(ctx, data){
-      const w = ctx.canvas.width / devicePixelRatio;
-      const h = ctx.canvas.height / devicePixelRatio;
-      ctx.clearRect(0,0,w,h);
-      // background
-      ctx.fillStyle = 'rgba(255,255,255,0.01)';
-      ctx.fillRect(0,0,w,h);
-      // axes
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(36,8); ctx.lineTo(36,h-20); ctx.lineTo(w-8,h-20); ctx.stroke();
-
-      const maxVal = Math.max(1, ...data);
-      // draw grid horizontal
-      ctx.fillStyle = 'rgba(159,176,191,0.12)';
-      ctx.font = '11px system-ui';
-      ctx.fillStyle = 'rgba(159,176,191,0.7)';
-      ctx.fillText('events/sec', 8, 12);
-      // plot
-      ctx.beginPath();
-      const left = 40, right = w-12;
-      const top = 8, bottom = h-28;
-      const plotW = right - left;
-      for(let i=0;i<data.length;i++){
-        const x = left + (i/(data.length-1))*plotW;
-        const y = bottom - (data[i]/maxVal)*(bottom-top);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      }
-      ctx.strokeStyle = 'rgba(45,212,191,0.95)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // fill under curve
-      ctx.lineTo(right, bottom); ctx.lineTo(left, bottom); ctx.closePath();
-      ctx.fillStyle = 'rgba(45,212,191,0.08)';
-      ctx.fill();
-
-      // right-top label
-      ctx.fillStyle = 'rgba(159,176,191,0.7)';
-      ctx.font = '12px system-ui';
-      const latest = data[data.length-1];
-      ctx.fillText('Now: '+latest, w-80, 16);
-    }
-
-    // utilities for control actions
-    function setPhase(phase){
-      currentPhase = phase;
-      phaseSelect.value = phase;
-      simStart = performance.now(); // reset timer so the "time" relates to start
-      log(`Phase set to: ${phase}`);
-    }
-    phaseSelect.addEventListener('change', ()=>{ setPhase(phaseSelect.value) });
-
-    // apply protein immediate: switch to 'during' for duration then return to 'after'
-    let autoSeqTimer = null;
-    function applyProtein(durationSec=7){
-      setPhase('during');
-      log('Protein effect applied.');
-      // after duration -> go to after
-      if(autoSeqTimer) clearTimeout(autoSeqTimer);
-      autoSeqTimer = setTimeout(()=>{ setPhase('after'); log('Protein effect ended. Phase => after'); }, durationSec*1000);
-    }
-    applyProteinBtn.addEventListener('click', ()=> applyProtein(7));
-
-    // auto sequence: cancer -> during -> after with timings
-    let autoRunning = false;
-    let autoSeqHandles = [];
-    autoSeqBtn.addEventListener('click', ()=>{
-      if(autoRunning) return;
-      autoRunning = true;
-      log('Auto sequence started: cancer → during → after');
-      setPhase('cancer');
-      // after 6s -> during
-      const h1 = setTimeout(()=>{ setPhase('during'); }, 6000);
-      // after 6+7s -> after
-      const h2 = setTimeout(()=>{ setPhase('after'); autoRunning = false; log('Auto sequence completed'); }, 13000);
-      autoSeqHandles.push(h1,h2);
-    });
-    stopAutoBtn.addEventListener('click', ()=>{
-      for(const h of autoSeqHandles) clearTimeout(h);
-      autoSeqHandles = [];
-      autoRunning = false;
-      log('Auto sequence stopped');
-    });
-
-    // reset
-    resetBtn.addEventListener('click', ()=>{
-      initParticles();
-      // reset chart
-      for(let i=0;i<chartData.length;i++) chartData[i]=0;
-      simStart = performance.now();
-      log('Simulation reset');
-    });
-
-    // start loop
-    function start(){
-      running = true;
-      simStart = performance.now();
-      lastSecondTick = Math.floor(performance.now()/1000);
-      currentSecondEvents = 0;
-      if(!anim) loop();
-    }
-    start();
-
-    // initial chart fillback
-    for(let i=0;i<chartData.length;i++) chartData[i]=0;
-
-    // allow click-to-add cell on canvas
-    simCanvas.addEventListener('click',(e)=>{
-      const rect = simCanvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left);
-      const y = (e.clientY - rect.top);
-      particles.push(new Cell(x,y, Math.random()*6 + 6));
-      log('Added cell by click. Total: '+particles.length);
-    });
-
-    // record divisions into log and keep log trimmed (handled in log())
-    // ensure fit canvases
-    setTimeout(fitCanvases,120);
-  })();
-  </script>
 </body>
 </html>
